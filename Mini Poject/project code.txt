@@ -1,0 +1,266 @@
+import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk
+from typing import Self
+from weakref import ref
+import mysql.connector.connection
+from requests import delete
+
+
+win=tk.Tk()
+win.geometry('13750x700+0+0')
+win.title('Apartment Management System')
+#win.configure(bg='lightgrey')
+
+title_label=tk.Label(win,text='Apartment Management System',font=("Arial",25),border=10,relief=tk.GROOVE,bg='lightgrey')
+title_label.pack(side=tk.TOP,fil=tk.X)
+
+detail_frame=tk.LabelFrame(win,text="Enter Details",font=('arial',20),bg='lightgrey',bd=10,relief=tk.GROOVE)
+detail_frame.place(x=20,y=90,width=420,height=575)
+
+
+data_frame=tk.LabelFrame(win,bd=10,bg='lightgrey',relief=tk.GROOVE)
+data_frame.place(x=475,y=90,width=810,height=575)
+
+
+blockno=tk.StringVar()
+doorno=tk.StringVar()
+name_id=tk.StringVar()
+contactno=tk.StringVar()
+members=tk.StringVar()
+mailid=tk.StringVar()
+search_by=tk.StringVar()
+search_val=tk.StringVar()
+
+
+
+block_no=tk.Label(detail_frame,text='Block No',font=('arial',17),bg='lightgrey')
+block_no.grid(row=0,column=0,padx=2,pady=2)
+block_no_ent=tk.Entry(detail_frame,bd=7,font=('arial',17),textvariable=blockno)
+block_no_ent.grid(row=0,column=1,padx=2,pady=2)
+
+door_no=tk.Label(detail_frame,text='Door No',font=('arial',17),bg='lightgrey')
+door_no.grid(row=1,column=0,padx=2,pady=2)
+door_no_ent=tk.Entry(detail_frame,bd=7,font=('arial',17),textvariable=doorno)
+door_no_ent.grid(row=1,column=1,padx=2,pady=2)
+
+name=tk.Label(detail_frame,text='Name',font=('arial',17),bg='lightgrey')
+name.grid(row=2,column=0,padx=2,pady=2)
+name_ent=tk.Entry(detail_frame,bd=7,font=('arial',17),textvariable=name_id)
+name_ent.grid(row=2,column=1,padx=2,pady=2)
+
+contact_no=tk.Label(detail_frame,text='Contact',font=('arial',17),bg='lightgrey')
+contact_no.grid(row=3,column=0,padx=2,pady=2)
+contact_no_ent=tk.Entry(detail_frame,bd=7,font=('arial',17),textvariable=contactno)
+contact_no_ent.grid(row=3,column=1,padx=2,pady=2)
+
+members_no=tk.Label(detail_frame,text='Members',font=('arial',17),bg='lightgrey')
+members_no.grid(row=4,column=0,padx=2,pady=2)
+members_no_ent=tk.Entry(detail_frame,bd=7,font=('arial',17),textvariable=members)
+members_no_ent.grid(row=4,column=1,padx=2,pady=2)
+
+mail_id=tk.Label(detail_frame,text='Mail id',font=('arial',17),bg='lightgrey')
+mail_id.grid(row=5,column=0,padx=2,pady=2)
+mail_id_ent=tk.Entry(detail_frame,bd=7,font=('arial',17),textvariable=mailid)
+mail_id_ent.grid(row=5,column=1,padx=2,pady=2)
+
+def fetch_apartment():
+    con=mysql.connector.connect(host='localhost',user='root',password='Ns@2005@',database='ams')
+    cur=con.cursor()
+    cur.execute("SELECT * FROM apartment")
+    rows=cur.fetchall()
+    if len(rows)!=0:
+        resident_table.delete(*resident_table.get_children())
+        for row in rows:
+            resident_table.insert('',tk.END,values=row)
+        con.commit()
+    con.close()
+
+    
+def add_func():
+    if blockno.get() =="" or doorno.get()=="" :
+         messagebox.showerror("error!","please fill all the details")
+    else:
+        con=mysql.connector.connect(host='localhost',user='root',password='neela@2004',database='ams')
+        cur=con.cursor()
+        cur.execute("insert into apartment values(%s,%s,%s,%s,%s,%s)",(blockno.get(),doorno.get(),name_id.get(),contactno.get(),members.get(),mailid.get()))
+        con.commit()
+        con.close()
+        
+        fetch_apartment()
+        
+def get_cursor(event):
+    cursor_row = resident_table.focus()
+    content=resident_table.item(cursor_row)
+    row = content['values']
+    blockno.set(row[0])
+    doorno.set(row[1])
+    name_id.set(row[2])
+    contactno.set(row[3])
+    members.set(row[4])
+    mailid.set(row[5])
+    
+def clear():
+    blockno.set("")
+    doorno.set("")
+    name_id.set("")
+    contactno.set("")
+    members.set("")
+    mailid.set("")
+    
+    
+
+def update_func():
+    con=mysql.connector.connect(host='localhost',user='root',password='neela@2004',database='ams')
+    cur=con.cursor()
+    cur.execute("update apartment set blockno=%s,doorno=%s,name_id=%s,contactno=%s,members=%s  where mailid=%s",(blockno.get(),doorno.get(),name_id.get(),contactno.get(),members.get(),mailid.get()))
+    con.commit()
+    con.close()
+    fetch_apartment()
+    clear()
+
+    
+def delete():
+    selected_item = resident_table.selection()
+    if not selected_item:
+        messagebox.showwarning("Delete Error", "Please select a resident to delete")
+        return
+
+    resident_data = resident_table.item(selected_item, 'values')
+    blockno, doorno, name_id, contactno, members, mailid = resident_data
+
+    con=mysql.connector.connect(host='localhost',user='root',password='neela@2004',database='ams')
+    if con:
+        try:
+            cur = con.cursor()
+            cur.execute("DELETE FROM apartment WHERE blockno = %s AND doorno = %s AND name_id = %s AND contactno = %s AND members = %s AND mailid = %s",
+                           (blockno, doorno, name_id, contactno, members, mailid))
+            con.commit()
+            fetch_apartment()
+            messagebox.showinfo("Success", "Resident deleted successfully")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Database Error", f"Error: {err}")
+        finally:
+            con.close()
+            
+# Function to search for residents
+def search_resident():
+    search_by_value = search_by.get()
+    search_text_value = search_val.get()
+    
+    if not search_by_value or not search_text_value:
+        messagebox.showwarning("Search Error", "Please select a search criterion and enter a search term")
+        return
+
+    con=mysql.connector.connect(host='localhost',user='root',password='neela@2004',database='ams')
+    if con:
+        try:
+            cursor = con.cursor()
+
+            # Mapping user-friendly column names to actual database column names
+            column_mapping = {
+                "Block No": "blockno",
+                "Door No": "doorno",
+                "Name": "name_id",
+                "Contact": "contactno",
+                "Members": "members",
+                "Mail id": "mailid"
+            }
+            
+            # Get the actual column name from the mapping
+            db_column = column_mapping.get(search_by_value)
+            
+            # If the column name is not found, raise an error
+            if not db_column:
+                messagebox.showwarning("Search Error", "Invalid search criterion selected")
+                return
+            
+            query = f"SELECT * FROM apartment WHERE {db_column} LIKE %s"
+            cursor.execute(query, ('%' + search_text_value + '%',))
+            rows = cursor.fetchall()
+
+            resident_table.delete(*resident_table.get_children())
+            
+            if rows:
+                for row in rows:
+                    resident_table.insert('', 'end', values=row)
+            else:
+                messagebox.showinfo("Search Result", "No matching records found")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Database Error", f"Error: {err}")
+        finally:
+            con.close()   
+
+bt_frame=tk.Frame(detail_frame,bg='lightgrey',bd=10,relief=tk.GROOVE)
+bt_frame.place(x=20,y=300,width=360,height=190)
+
+add_btn=tk.Button(bt_frame,bg='lightgrey',text='Add',bd=7,font=('Arial',13),width=16,height=3,command=add_func)
+add_btn.grid(row=0,column=0,padx=2,pady=2)
+
+update_btn=tk.Button(bt_frame,bg='lightgrey',text='Update',bd=7,font=('Arial',13),width=16,height=3,command=update_func)
+update_btn.grid(row=0,column=1,padx=2,pady=2)
+
+clear_btn=tk.Button(bt_frame,bg='lightgrey',text='Clear',bd=7,font=('Arial',13),width=16,height=3,command=clear)
+clear_btn.grid(row=1,column=0,padx=2,pady=2)
+
+delete_btn=tk.Button(bt_frame,bg='lightgrey',text='Delete',bd=7,font=('Arial',13),width=16,height=3,command=delete)
+delete_btn.grid(row=1,column=1,padx=2,pady=2)
+    
+search_frame=tk.Frame(data_frame,bg='lightgrey',bd=10,relief=tk.GROOVE)
+search_frame.pack(side=tk.TOP,fill=tk.X)
+
+search_label=tk.Label(search_frame,text='Search',bg='lightgrey',font=('arial',14))
+search_label.grid(row=0,column=0,padx=2,pady=2)
+
+search_in=ttk.Combobox(search_frame,font=('arial',14),state='readonly',textvariable=search_by,width=13)
+search_in['values']=("Block No","Door No","Name","Contact","Members","Mail id")
+search_in.grid(row=0,column=1,padx=12,pady=2)
+search_in1_ent=tk.Entry(search_frame,bd=7,font=('arial',17),textvariable=search_val)
+search_in1_ent.grid(row=0,column=2,padx=2,pady=2)
+search_btn=tk.Button(search_frame,bg='lightgrey',text='Search',bd=9,font=('Arial',13),width=7,height=1,command=search_resident)
+search_btn.grid(row=0,column=3,padx=12,pady=2)
+show_all_btn=tk.Button(search_frame,bg='lightgrey',text='Show All',bd=9,font=('Arial',13),width=7,height=1,command=fetch_apartment)
+show_all_btn.grid(row=0,column=4,padx=12,pady=2)
+
+
+
+
+
+
+db_frame=tk.Frame(data_frame,bg='lightgrey',bd=11,relief=tk.GROOVE)
+db_frame.pack(fill=tk.BOTH,expand=True)
+
+y_scroll=tk.Scrollbar(db_frame,orient=tk.VERTICAL)
+x_scroll=tk.Scrollbar(db_frame,orient=tk.HORIZONTAL)
+
+resident_table=ttk.Treeview(db_frame,columns=("Block No","Door No","Name","Contact","Members","Mail id"),yscrollcommand=y_scroll.set,xscrollcommand=x_scroll.set)
+y_scroll.config(command=resident_table.yview)
+x_scroll.config(command=resident_table.xview)
+y_scroll.pack(side=tk.RIGHT,fill=tk.Y)
+x_scroll.pack(side=tk.BOTTOM,fill=tk.X)
+
+resident_table.heading("Block No",text="Block No")
+resident_table.heading("Door No",text="Door No")
+resident_table.heading("Name",text="Name")
+resident_table.heading("Contact",text="Contact")
+resident_table.heading("Members",text="Members")
+resident_table.heading("Mail id",text="Mail id")
+
+resident_table['show']='headings'
+resident_table.pack(fill=tk.BOTH,expand=True)
+
+resident_table.column("Block No",width=200)
+resident_table.column("Door No",width=200)
+resident_table.column("Name",width=200)
+resident_table.column("Contact",width=200)
+resident_table.column("Members",width=200)
+resident_table.column("Mail id",width=200)
+
+resident_table.pack(fill=tk.BOTH,expand=True)
+
+fetch_apartment()
+
+
+resident_table.bind("<ButtonRelease-1>",get_cursor)
+
+win.mainloop()
